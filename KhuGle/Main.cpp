@@ -2,6 +2,11 @@
 //	Dept. Software Convergence, Kyung Hee University
 //	Prof. Daeho Lee, nize@khu.ac.kr
 //
+#pragma comment(lib, "ws2_32")
+#include <WinSock2.h>
+#include <ws2tcpip.h>
+#define BUFFERSIZE 1024
+
 #include "KhuGleWin.h"
 #include <iostream>
 #include <string>
@@ -294,9 +299,35 @@ void PongGame::Update()
 int main()
 {
 	srand(time(NULL));
-	PongGame *game = new PongGame(1280,720);
+	WSADATA wsaData;
+	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+		std::cout << "Ver 2.2 Erorr" << std::endl;
+		return 1;
+	}
 
-	KhuGleWinInit(game);
+	PCWSTR serverName = L"server.dalae37.com";
+	PADDRINFOW ipInfo;
 
+	if (GetAddrInfoW(serverName, NULL, NULL, &ipInfo) == 0) {
+		PIN_ADDR ip = &((PSOCKADDR_IN)ipInfo->ai_addr)->sin_addr;
+		unsigned long ipName = ip->S_un.S_addr;
+		SOCKET sock = socket(PF_INET, SOCK_STREAM, 0);
+		SOCKADDR_IN addr;
+		memset(&addr, 0, sizeof(addr));
+		addr.sin_family = AF_INET;
+		addr.sin_addr.s_addr = ipName;
+		addr.sin_port = htons(3737);
+		std::cout << "Server IP : " << inet_ntoa(addr.sin_addr) << std::endl;
+		if (connect(sock, (SOCKADDR*)&addr, sizeof(SOCKADDR_IN)) == SOCKET_ERROR) {
+			std::cout << "Server Connection Error" << std::endl;
+			return 1;
+		}
+
+		PongGame* game = new PongGame(1280, 720);
+		KhuGleWinInit(game);
+	}
+	else {
+		std::cout << "Unknown Server Name : " << serverName << std::endl;
+	}
 	return 0;
 }
