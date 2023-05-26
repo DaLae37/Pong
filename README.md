@@ -1,5 +1,8 @@
 # Pong
-WinAPI Pong Game as CPP
+WinAPI Pong Game as CPP Client
+
+# Server
+[Pong Game Server](https://github.com/DaLae37/PongGameServer)
 
 # Reference
 [WinAPI Framework](https://github.com/NizeLee/KhuGle)
