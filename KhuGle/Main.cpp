@@ -1,10 +1,10 @@
 #include "stdafx.h"
-#include "PongGame.h"
+#include "MainScene.h"
 
 int main()
 {
 	srand(time(NULL));
-	PongGame* game = new PongGame(1280, 720);
-	KhuGleWinInit(game);
+	MainScene* main = new MainScene(SCREEN_WIDTH, SCREEN_HEIGHT);
+	KhuGleWinInit(main);
 	return 0;
 }

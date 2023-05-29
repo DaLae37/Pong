@@ -1,6 +1,5 @@
 #pragma once
 #include "stdafx.h"
-#include "Brick.h"
 
 class PongGame : public CKhuGleWin
 {
@@ -11,10 +10,11 @@ private:
 	bool isCollision;
 
 public:
+	PongGame();
+	~PongGame();
 	CKhuGleSprite* player;
 	CKhuGleSprite* ball;
 	CKhuGleSprite* maps[4]; //TOP, RIGHT, BOTTOM, LEFT º®
-	std::vector<Brick*>bricks; // 5 x 10
 
 	void CreateLevel();
 	void CollisionCheck();
@@ -23,7 +23,6 @@ public:
 
 	bool ConnectServer();
 
-	PongGame(int nW, int nH);
 	void Update();
 	CKhuGleLayer* m_pGameLayer;
 	CKgPoint m_LButtonStart, m_LButtonEnd;

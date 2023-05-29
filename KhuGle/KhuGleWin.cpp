@@ -360,7 +360,7 @@ void CKhuGleWin::DrawSceneTextPos(const char *Text, CKgPoint ptPos)
 
 	SelectObject(hCompDC, hFont);
 
-	SetTextColor(hCompDC, RGB(0, 0, 0));
+	SetTextColor(hCompDC, RGB(200, 200, 200));
 	SetBkMode(hCompDC, TRANSPARENT);
 
 	RECT Rt;
