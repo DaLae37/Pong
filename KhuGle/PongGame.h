@@ -57,7 +57,7 @@ public:
 	void CheckInput();
 
 	//Collision
-	bool CheckMouseInRect(CKhuGleSprite* rect);
+	bool IsPointInRect(CKgPoint point, CKhuGleSprite* rect);
 	CKgVector2D GetProjectionResult(CKhuGleSprite* s1);
 	double GetLineCollisionResult(CKhuGleSprite* s1);
 	bool GetAABBCollisionResult(CKhuGleSprite* s1);

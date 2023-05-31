@@ -22,10 +22,13 @@ void Player::Move(bool up, bool down, float deltaTime) {
 		MoveBy(0, m_Velocity.y * deltaTime);
 	}
 
-	if (m_rtBoundBox.Top < SCREEN_MARGIN) { //왼쪽 화면을 넘어가지 못하게 값 조정
-		m_rtBoundBox.Top = SCREEN_MARGIN;
+	if (m_rtBoundBox.Top < SCREEN_MARGIN / 2) { //위쪽 화면을 넘어가지 못하게 값 조정
+		m_rtBoundBox.Top = SCREEN_MARGIN / 2;
+		m_rtBoundBox.Bottom = SCREEN_MARGIN / 2 + PLAYER_HEIGHT;
 	}
-	if (m_rtBoundBox.Bottom > SCREEN_HEIGHT - SCREEN_MARGIN) {//오른쪽 화면을 넘어가지 못하게 값 조정
-		m_rtBoundBox.Bottom = SCREEN_HEIGHT - SCREEN_MARGIN;
+	if (m_rtBoundBox.Bottom > SCREEN_HEIGHT - LAYER_MARGIN) {//아래쪽 화면을 넘어가지 못하게 값 조정
+		m_rtBoundBox.Bottom = SCREEN_HEIGHT - LAYER_MARGIN;
+		m_rtBoundBox.Top = SCREEN_HEIGHT - LAYER_MARGIN - PLAYER_HEIGHT;
 	}
+	m_Center.y = (m_rtBoundBox.Bottom + m_rtBoundBox.Top) / 2;
 }

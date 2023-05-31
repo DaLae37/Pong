@@ -44,10 +44,10 @@ void PongGame::InitResource() {
 	m_pGameLayer->AddChild(multiGameButton);
 
 	//Player
-	leftPlayer = new Player(GP_STYPE_RECT, GP_CTYPE_KINEMATIC, CKgLine(CKgPoint(LAYER_MARGIN, 250), CKgPoint(LAYER_MARGIN + PLAYER_WIDTH, 250 + PLAYER_HEIGHT)), WHITE, true, 0);
+	leftPlayer = new Player(GP_STYPE_RECT, GP_CTYPE_KINEMATIC, CKgLine(CKgPoint(LAYER_MARGIN, 250), CKgPoint(LAYER_MARGIN + PLAYER_WIDTH, 250 + PLAYER_HEIGHT)), WHITE, true, PLAYER_HEIGHT);
 	leftPlayer->SetPhysics(CKgVector2D(200, 200), 200);
 
-	rightPlayer = new Player(GP_STYPE_RECT, GP_CTYPE_KINEMATIC, CKgLine(CKgPoint(SCREEN_WIDTH - LAYER_MARGIN * 2, 250), CKgPoint(SCREEN_WIDTH - LAYER_MARGIN * 2 + PLAYER_WIDTH, 250 + PLAYER_HEIGHT)), KG_COLOR_24_RGB(255, 255, 255), true, 0);
+	rightPlayer = new Player(GP_STYPE_RECT, GP_CTYPE_KINEMATIC, CKgLine(CKgPoint(SCREEN_WIDTH - LAYER_MARGIN * 2, 250), CKgPoint(SCREEN_WIDTH - LAYER_MARGIN * 2 + PLAYER_WIDTH, 250 + PLAYER_HEIGHT)), KG_COLOR_24_RGB(255, 255, 255), true, PLAYER_HEIGHT);
 	rightPlayer->SetPhysics(CKgVector2D(200, 200), 200);
 
 	//Object
@@ -108,15 +108,15 @@ bool PongGame::ConnectServer() {
 	return true;
 }
 
-bool PongGame::CheckMouseInRect(CKhuGleSprite* rect) {
+bool PongGame::IsPointInRect(CKgPoint point, CKhuGleSprite* rect) {
 	if (rect == NULL) {
 		return false;
 	}
 	else {
-		return (rect->m_rtBoundBox.Left <= m_MousePosX) &&
-			(rect->m_rtBoundBox.Right >= m_MousePosX) &&
-			(rect->m_rtBoundBox.Top <= m_MousePosY) &&
-			(rect->m_rtBoundBox.Bottom >= m_MousePosY);
+		return (rect->m_rtBoundBox.Left <= point.X) &&
+			(rect->m_rtBoundBox.Right >= point.X) &&
+			(rect->m_rtBoundBox.Top <= point.Y) &&
+			(rect->m_rtBoundBox.Bottom >= point.Y);
 	}
 }
 
@@ -194,7 +194,15 @@ void PongGame::RenderUI() {
 	if (isSetGameType) {
 		if (isGameStart) {
 			if (isGameEnd) {
-
+				std::string message;
+				if (leftScore >= 10) {
+					message = "왼쪽 플레이어 승리!";
+				}
+				else {
+					message = "오른쪽 플레이어 승리!";
+				}
+				DrawSceneTextPos(message.c_str(), CKgPoint(275, 100), WHITE, 100);
+				DrawSceneTextPos("ESC를 누르면 종료됩니다", CKgPoint(425, 600), WHITE, 50);
 			}
 			std::string message = std::to_string(leftScore) + "  :  " + std::to_string(rightScore);
 			DrawSceneTextPos("Pong (10점을 내는 사람이 승리합니다)", CKgPoint(0, 0), WHITE);
@@ -250,9 +258,20 @@ void PongGame::Update() {
 
 	if (isSetGameType) {
 		if (isGameStart) {
-			CheckInput();
-			leftPlayer->Move(leftPlayerMove[0], leftPlayerMove[1], m_ElapsedTime);
-			rightPlayer->Move(rightPlayerMove[0], rightPlayerMove[1], m_ElapsedTime);
+			if (isGameEnd) {
+				if (m_bKeyPressed[VK_ESCAPE]) {
+					PostQuitMessage(0);
+					return;
+				}
+			}
+			else {
+				CheckInput();
+				leftPlayer->Move(leftPlayerMove[0], leftPlayerMove[1], m_ElapsedTime);
+				rightPlayer->Move(rightPlayerMove[0], rightPlayerMove[1], m_ElapsedTime);
+				if (leftScore >= 10 || rightScore >= 10) {
+					isGameEnd = true;
+				}
+			}
 		}
 		else {
 			if (gameType == GameType::SINGLE) {
@@ -269,12 +288,12 @@ void PongGame::Update() {
 	}
 	else {
 		if (m_bMousePressed[0]) {
-			if (CheckMouseInRect(singleGameButton)) {
+			if (IsPointInRect(CKgPoint(m_MousePosX, m_MousePosY), singleGameButton)) {
 				gameType = GameType::SINGLE;
 				isSetGameType = true;
 				CreateGame();
 			}
-			else if (CheckMouseInRect(multiGameButton)) {
+			else if (IsPointInRect(CKgPoint(m_MousePosX, m_MousePosY), multiGameButton)) {
 				gameType = GameType::MULTI;
 				isSetGameType = true;
 				CreateGame();
