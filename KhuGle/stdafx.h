@@ -16,13 +16,34 @@
 #endif
 #endif  _DEBUG
 
+#include <cmath>
+#include <cstdio>
 #include <iostream>
 #include <string>
 #include <stdlib.h>
 #include <time.h>
 
+#include "KhuGleWin.h"
+
+#define PROGRAM_NAME "Pong"
+
 #define SCREEN_WIDTH 1280
 #define SCREEN_HEIGHT 720
 #define SCREEN_MARGIN 60
+#define LAYER_MARGIN (SCREEN_MARGIN + 30)
+#define PLAYER_WIDTH 15
+#define PLAYER_HEIGHT 100
+#define BALL_RADIUS 15
 
-#include "KhuGleWin.h"
+#define BLACK KG_COLOR_24_RGB(0, 0, 0)
+#define WHITE KG_COLOR_24_RGB(255, 255, 255)
+#define RED KG_COLOR_24_RGB(255, 0, 0)
+#define BLUE KG_COLOR_24_RGB(0, 0, 255)
+#define YELLOW KG_COLOR_24_RGB(255, 255, 0)
+#define GRAY KG_COLOR_24_RGB(95, 95, 95)
+
+enum class GameType {
+	NONE,
+	SINGLE,
+	MULTI
+};

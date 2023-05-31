@@ -148,8 +148,8 @@
     <ClCompile Include="KhuGleScene.cpp" />
     <ClCompile Include="KhuGleSprite.cpp" />
     <ClCompile Include="KhuGleWin.cpp" />
-    <ClCompile Include="Main.cpp" />
-    <ClCompile Include="MainScene.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="Player.cpp" />
     <ClCompile Include="PongGame.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -159,7 +159,7 @@
     <ClInclude Include="KhuGleScene.h" />
     <ClInclude Include="KhuGleSprite.h" />
     <ClInclude Include="KhuGleWin.h" />
-    <ClInclude Include="MainScene.h" />
+    <ClInclude Include="Player.h" />
     <ClInclude Include="PongGame.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>

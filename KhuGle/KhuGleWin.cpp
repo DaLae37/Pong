@@ -2,30 +2,13 @@
 //	Dept. Software Convergence, Kyung Hee University
 //	Prof. Daeho Lee, nize@khu.ac.kr
 //
-#include "KhuGleWin.h"
-#include <cmath>
-#include <cstdio>
-#include <iostream>
-
-#pragma warning(disable:4996)
-
-#define _CRTDBG_MAP_ALLOC
-#include <cstdlib>
-#include <crtdbg.h>
-
-#ifdef _DEBUG
-#ifndef DBG_NEW
-#define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
-#define new DBG_NEW
-#endif
-#endif  // _DEBUG
+#include "stdafx.h"
 
 CKhuGleWin *CKhuGleWin::m_pWinApplication = 0;
 
 void KhuGleWinInit(CKhuGleWin *pApplication)
 {
 	CKhuGleWin::m_pWinApplication = pApplication;
-
 	WinMain(0, 0, 0, 0);
 }
 
@@ -337,9 +320,9 @@ void CKhuGleWin::OnPaint()
 	EndPaint(m_hWnd, &ps);
 }
 
-void CKhuGleWin::DrawSceneTextPos(const char *Text, CKgPoint ptPos)
+void CKhuGleWin::DrawSceneTextPos(const char *Text, CKgPoint ptPos, KgColor24 color, int size)
 {
-	int nTextHeight = 25;
+	int nTextHeight = size;
 
 	HDC hDC;
 	HDC hCompDC;
@@ -360,7 +343,7 @@ void CKhuGleWin::DrawSceneTextPos(const char *Text, CKgPoint ptPos)
 
 	SelectObject(hCompDC, hFont);
 
-	SetTextColor(hCompDC, RGB(200, 200, 200));
+	SetTextColor(hCompDC, color);
 	SetBkMode(hCompDC, TRANSPARENT);
 
 	RECT Rt;
@@ -466,7 +449,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 	windowClass.hbrBackground = NULL;
 	windowClass.lpszMenuName = NULL;
 	windowClass.lpszClassName = "WinClass";
-	windowClass.hIconSm = LoadIcon(NULL, IDI_WINLOGO);
+	windowClass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
 
 	if (!RegisterClassEx(&windowClass))	return 0;
 
@@ -477,7 +460,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 	AdjustWindowRectEx(&windowRect, dwStyle, FALSE, dwExStyle);
 
 	CKhuGleWin::m_pWinApplication->m_hWnd = CreateWindowEx(NULL, "WinClass", 
-		"Pong Game", 
+		PROGRAM_NAME,
 		dwStyle |
 		WS_CLIPCHILDREN |
 		WS_CLIPSIBLINGS,

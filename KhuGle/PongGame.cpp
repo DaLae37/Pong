@@ -2,22 +2,78 @@
 
 PongGame::PongGame() : CKhuGleWin(SCREEN_WIDTH, SCREEN_HEIGHT)
 {
-	isStart = false;
-	HP = 3;
-	isCollision = false;
+	InitScene();
+	InitResource();
+}
 
-	m_nLButtonStatus = 0;
+PongGame::~PongGame() {
+
+}
+
+void PongGame::InitScene() {
+	gameType = GameType::NONE;
+
+	isSetGameType = false;
+	isGameStart = false;
+	isGameEnd = false;
+	isConnected = false;
+	leftPlayerMove[0] = false;
+	leftPlayerMove[1] = false;
+	rightPlayerMove[0] = false;
+	rightPlayerMove[1] = false;
+
+	leftScore = 0;
+	rightScore = 0;
+	startSignal = 0;
 
 	m_Gravity = CKgVector2D(0., 98.);
 	m_AirResistance = CKgVector2D(0.1, 0.1);
 
-	m_pScene = new CKhuGleScene(SCREEN_WIDTH, SCREEN_HEIGHT, KG_COLOR_24_RGB(95, 95, 95));
+	m_pScene = new CKhuGleScene(SCREEN_WIDTH, SCREEN_HEIGHT, GRAY);
 
-	m_pGameLayer = new CKhuGleLayer(SCREEN_WIDTH - SCREEN_MARGIN, SCREEN_HEIGHT - SCREEN_MARGIN, KG_COLOR_24_RGB(0, 0, 0), CKgPoint(30, 30));
-
+	m_pGameLayer = new CKhuGleLayer(SCREEN_WIDTH - SCREEN_MARGIN, SCREEN_HEIGHT - SCREEN_MARGIN, BLACK, CKgPoint(30, 30));
 	m_pScene->AddChild(m_pGameLayer);
+}
 
-	CreateLevel();
+void PongGame::InitResource() {
+	//UI
+	singleGameButton = new CKhuGleSprite(GP_STYPE_RECT, GP_CTYPE_STATIC, CKgLine(CKgPoint(450, 350), CKgPoint(750, 450)), WHITE, true, 0);
+	m_pGameLayer->AddChild(singleGameButton);
+
+	multiGameButton = new CKhuGleSprite(GP_STYPE_RECT, GP_CTYPE_STATIC, CKgLine(CKgPoint(450, 500), CKgPoint(750, 600)), WHITE, true, 0);
+	m_pGameLayer->AddChild(multiGameButton);
+
+	//Player
+	leftPlayer = new Player(GP_STYPE_RECT, GP_CTYPE_KINEMATIC, CKgLine(CKgPoint(LAYER_MARGIN, 250), CKgPoint(LAYER_MARGIN + PLAYER_WIDTH, 250 + PLAYER_HEIGHT)), WHITE, true, 0);
+	leftPlayer->SetPhysics(CKgVector2D(200, 200), 200);
+
+	rightPlayer = new Player(GP_STYPE_RECT, GP_CTYPE_KINEMATIC, CKgLine(CKgPoint(SCREEN_WIDTH - LAYER_MARGIN * 2, 250), CKgPoint(SCREEN_WIDTH - LAYER_MARGIN * 2 + PLAYER_WIDTH, 250 + PLAYER_HEIGHT)), KG_COLOR_24_RGB(255, 255, 255), true, 0);
+	rightPlayer->SetPhysics(CKgVector2D(200, 200), 200);
+
+	//Object
+	ball = new CKhuGleSprite(GP_STYPE_ELLIPSE, GP_CTYPE_DYNAMIC, CKgLine(CKgPoint(280, 280), CKgPoint(300, 300)), YELLOW, true, BALL_RADIUS);
+	ball->m_Velocity = CKgVector2D(300, 300);
+
+	maps[0] = new CKhuGleSprite(GP_STYPE_LINE, GP_CTYPE_KINEMATIC, CKgLine(CKgPoint(0, 0), CKgPoint(0, 659)), KG_COLOR_24_RGB(0, 0, 0), false, 0);
+	maps[1] = new CKhuGleSprite(GP_STYPE_LINE, GP_CTYPE_KINEMATIC, CKgLine(CKgPoint(1219, 0), CKgPoint(1219, 659)), KG_COLOR_24_RGB(0, 0, 0), false, 0);
+	maps[2] = new CKhuGleSprite(GP_STYPE_LINE, GP_CTYPE_KINEMATIC, CKgLine(CKgPoint(0, 0), CKgPoint(1220, 0)), KG_COLOR_24_RGB(0, 0, 0), false, 0);
+	maps[3] = new CKhuGleSprite(GP_STYPE_LINE, GP_CTYPE_KINEMATIC, CKgLine(CKgPoint(0, 659), CKgPoint(1220, 659)), KG_COLOR_24_RGB(0, 0, 0), false, 0);
+}
+
+void PongGame::CreateGame() {
+	for (int i = 0; i < m_pGameLayer->m_Children.size(); i++) {
+		if (m_pGameLayer->m_Children[i] == singleGameButton) {
+			m_pGameLayer->m_Children.erase(m_pGameLayer->m_Children.begin() + i);
+		}
+	}
+	for (int i = 0; i < m_pGameLayer->m_Children.size(); i++) {
+		if (m_pGameLayer->m_Children[i] == multiGameButton) {
+			m_pGameLayer->m_Children.erase(m_pGameLayer->m_Children.begin() + i);
+		}
+	}
+	m_pGameLayer->AddChild(leftPlayer);
+	m_pGameLayer->AddChild(rightPlayer);
+	m_pGameLayer->AddChild(ball);
 }
 
 bool PongGame::ConnectServer() {
@@ -52,47 +108,15 @@ bool PongGame::ConnectServer() {
 	return true;
 }
 
-void PongGame::CreateLevel() { //레벨 초기화
-	if (m_pGameLayer->m_Children.size() != 0) {
-		ball->MoveTo(270 - ball->m_Radius, 270 - ball->m_Radius);
-		ball->m_Velocity = CKgVector2D(300, 300);
-		player->MoveTo(300, 405);
+bool PongGame::CheckMouseInRect(CKhuGleSprite* rect) {
+	if (rect == NULL) {
+		return false;
 	}
-	else {//처음 레벨을 생성했을 때
-		ball = new CKhuGleSprite(GP_STYPE_ELLIPSE, GP_CTYPE_DYNAMIC, CKgLine(CKgPoint(280, 280), CKgPoint(300, 300)),
-			KG_COLOR_24_RGB(255, 255, 0), true, 10);
-		ball->m_Velocity = CKgVector2D(300, 300);
-		m_pGameLayer->AddChild(ball);
-
-		player = new CKhuGleSprite(GP_STYPE_RECT, GP_CTYPE_KINEMATIC, CKgLine(CKgPoint(390, 250), CKgPoint(400, 350)),
-			KG_COLOR_24_RGB(255, 255, 255), true, 0);
-		m_pGameLayer->AddChild(player);
-		player->m_Velocity = CKgVector2D(200, 200);
-
-		maps[0] = new CKhuGleSprite(GP_STYPE_LINE, GP_CTYPE_KINEMATIC, CKgLine(CKgPoint(0, 0), CKgPoint(0, 659)),
-			KG_COLOR_24_RGB(0, 0, 0), false, 0);
-		maps[1] = new CKhuGleSprite(GP_STYPE_LINE, GP_CTYPE_KINEMATIC, CKgLine(CKgPoint(1219, 0), CKgPoint(1219, 659)),
-			KG_COLOR_24_RGB(0, 0, 0), false, 0);
-		maps[2] = new CKhuGleSprite(GP_STYPE_LINE, GP_CTYPE_KINEMATIC, CKgLine(CKgPoint(0, 0), CKgPoint(1220, 0)),
-			KG_COLOR_24_RGB(0, 0, 0), false, 0);
-		maps[3] = new CKhuGleSprite(GP_STYPE_LINE, GP_CTYPE_KINEMATIC, CKgLine(CKgPoint(0, 659), CKgPoint(1220, 659)),
-			KG_COLOR_24_RGB(0, 0, 0), false, 0);
-	}
-}
-
-
-void PongGame::InGameInputCheck() {
-	if (m_bKeyPressed[VK_LEFT] && player->m_rtBoundBox.Left > 0) { //왼쪽 화면을 넘어갈 경우 움직임 통제
-		player->MoveBy(-player->m_Velocity.x * m_ElapsedTime, 0);
-	}
-	if (m_bKeyPressed[VK_RIGHT] && player->m_rtBoundBox.Right < SCREEN_WIDTH - SCREEN_MARGIN) { //오른쪽 화면을 넘어갈 경우 움직임 통제
-		player->MoveBy(player->m_Velocity.x * m_ElapsedTime, 0);
-	}
-	if (m_bKeyPressed[VK_UP] && player->m_rtBoundBox.Top > 0) { //오른쪽 화면을 넘어갈 경우 움직임 통제
-		player->MoveBy(0, -player->m_Velocity.y * m_ElapsedTime);
-	}
-	if (m_bKeyPressed[VK_DOWN] && player->m_rtBoundBox.Bottom < SCREEN_HEIGHT - SCREEN_MARGIN) { //오른쪽 화면을 넘어갈 경우 움직임 통제
-		player->MoveBy(0, player->m_Velocity.y * m_ElapsedTime);
+	else {
+		return (rect->m_rtBoundBox.Left <= m_MousePosX) &&
+			(rect->m_rtBoundBox.Right >= m_MousePosX) &&
+			(rect->m_rtBoundBox.Top <= m_MousePosY) &&
+			(rect->m_rtBoundBox.Bottom >= m_MousePosY);
 	}
 }
 
@@ -111,7 +135,6 @@ CKgVector2D PongGame::GetProjectionResult(CKhuGleSprite* s1) { //Projection Vect
 
 double PongGame::GetLineCollisionResult(CKhuGleSprite* s1) { //공과 다른 선 객체와의 충돌 확인
 	CKgVector2D normal = ball->m_Center - GetProjectionResult(s1);
-
 	double overlapped = CKgVector2D::abs(normal) - ball->m_Radius;
 
 	return overlapped;
@@ -124,7 +147,7 @@ bool PongGame::GetAABBCollisionResult(CKhuGleSprite* s1) { //공과 다른 사각형 객
 		(s1->m_rtBoundBox.Bottom >= ball->m_Center.y - ball->m_Radius);
 }
 
-void PongGame::MakeVritualCricleToCollision(CKhuGleSprite* s1) { //가상의 원을 만들어 공과 충돌처리
+void PongGame::MakePlayerAndBallCollision(CKhuGleSprite* s1) { //가상의 원을 만들어 공과 충돌처리
 	CKgVector2D project = GetProjectionResult(s1);
 	CKgVector2D PosVec = project - ball->m_Center;
 	double posVecY = PosVec.y;
@@ -135,27 +158,10 @@ void PongGame::MakeVritualCricleToCollision(CKhuGleSprite* s1) { //가상의 원을 �
 
 	double kx = (ball->m_Velocity.x - s1->m_Velocity.x);
 	double ky = (ball->m_Velocity.y - s1->m_Velocity.y);
-	double p = (Normal.x * kx + Normal.y * ky) / ball->m_Mass;
 
-	ball->m_Velocity.x = (ball->m_Velocity.x - p * Normal.x);
-	ball->m_Velocity.y = (ball->m_Velocity.y - p * Normal.y);
-
-	if (posVecY * ball->m_Velocity.y >= 0) {
-		ball->m_Velocity.y *= -1;
-	}
-	else if (posVecX * ball->m_Velocity.x >= 0 && s1->m_Velocity.x == 0) {
-		ball->m_Velocity.x *= -1;
-	}
 }
 
 void PongGame::CollisionCheck() {
-	if (player->m_rtBoundBox.Left < 0) { //왼쪽 화면을 넘어가지 못하게 값 조정
-		player->m_rtBoundBox.Left = 0;
-	}
-	if (player->m_rtBoundBox.Right > SCREEN_WIDTH - SCREEN_MARGIN) {//오른쪽 화면을 넘어가지 못하게 값 조정
-		player->m_rtBoundBox.Right = SCREEN_WIDTH - SCREEN_MARGIN;
-	}
-
 	for (int i = 0; i < 4; i++) { //벽과의 충돌
 
 		double overlapped = GetLineCollisionResult(maps[i]);
@@ -182,78 +188,98 @@ void PongGame::CollisionCheck() {
 			}
 		}
 	}
+}
 
-	isCollision = false;
-	//for (Brick* brick : bricks) { //벽돌과 충돌
-	//	if (!brick->getIsBroken()) {
+void PongGame::RenderUI() {
+	if (isSetGameType) {
+		if (isGameStart) {
+			if (isGameEnd) {
 
-	//		bool overlapped = GetAABBCollisionResult(brick);
-
-	//		if (overlapped) {
-	//			if (!isCollision) {
-	//				MakeVritualCricleToCollision(brick);
-	//				isCollision = true;
-	//			}
-	//			brick->setBrickHP(brick->getBrickHP() - 1);
-	//		}
-
-	//		if (brick->getBrickHP() <= 0) {
-	//			brick->setIsBroken(true);
-	//			remainBricks -= 1;
-	//		}
-	//	}
-	//}
-
-	bool overlapped = GetAABBCollisionResult(player); //바닥 블록과 충돌
-
-	if (overlapped) {
-		MakeVritualCricleToCollision(player);
+			}
+			std::string message = std::to_string(leftScore) + "  :  " + std::to_string(rightScore);
+			DrawSceneTextPos("Pong (10점을 내는 사람이 승리합니다)", CKgPoint(0, 0), WHITE);
+			DrawSceneTextPos(message.c_str(), CKgPoint(550, 50), WHITE, 75);
+		}
+		else {
+			std::string currentReady = std::to_string(startSignal);
+			std::string message = "준비가 되었으면 스페이스바를 눌러주세요 (" + currentReady + "/2)";
+			DrawSceneTextPos(message.c_str(), CKgPoint(110, 75), WHITE, 70);
+		}
+		switch (gameType)
+		{
+		case GameType::SINGLE:
+			break;
+		case GameType::MULTI:
+			break;
+		default:
+			break;
+		}
+	}
+	else {
+		DrawSceneTextPos("PONG", CKgPoint(450, 75), WHITE, 150);
+		DrawSceneTextPos("싱글 게임", CKgPoint(500, 390), BLACK, 75);
+		DrawSceneTextPos("멀티 게임", CKgPoint(500, 540), BLACK, 75);
 	}
 }
 
-void PongGame::UIRender() {	//UI
-	DrawSceneTextPos("Pong Game", CKgPoint(0, 0));
-	DrawSceneTextPos("남은 벽돌 : ", CKgPoint(300, 0));
-	DrawSceneTextPos(std::to_string(remainBricks).c_str(), CKgPoint(400, 0));
-	DrawSceneTextPos("HP : ", CKgPoint(550, 0));
-	DrawSceneTextPos(std::to_string(HP).c_str(), CKgPoint(600, 0));
+void PongGame::CheckInput() {
+	rightPlayerMove[0] = m_bKeyPressed[VK_UP];
+	rightPlayerMove[1] = m_bKeyPressed[VK_DOWN];
+	leftPlayerMove[0] = m_bKeyPressed['W'];
+	leftPlayerMove[1] = m_bKeyPressed['S'];
+
+	if (gameType == GameType::SINGLE) {
+		return;
+	}
+	else if (gameType == GameType::MULTI) {
+		if (opponentPlayer) {
+			leftPlayerMove[0] = opponentInput[0];
+			leftPlayerMove[1] = opponentInput[1];
+		}
+		else {
+			rightPlayerMove[0] = opponentInput[0];
+			rightPlayerMove[1] = opponentInput[1];
+		}
+	}
 }
 
-void PongGame::Update()
-{
+void PongGame::Update() {
 	CKhuGleWin::Update();
 	m_pScene->Render();
-	//UI
-	UIRender();
+	RenderUI();
 
-	if (HP > 0) {
-		if (isStart) {
-			remainBricks = 100;
-			if (remainBricks <= 0) { //모든 블록을 제거 시
-				DrawSceneTextPos("Clear! (Press ESC to Restart)", CKgPoint(m_pScene->m_nH / 2 - 50, m_pScene->m_nH / 2));
-				if (m_bKeyPressed[VK_ESCAPE]) {
-					isStart = false;
-					HP = 3;
-					CreateLevel();
+	if (isSetGameType) {
+		if (isGameStart) {
+			CheckInput();
+			leftPlayer->Move(leftPlayerMove[0], leftPlayerMove[1], m_ElapsedTime);
+			rightPlayer->Move(rightPlayerMove[0], rightPlayerMove[1], m_ElapsedTime);
+		}
+		else {
+			if (gameType == GameType::SINGLE) {
+				if (m_bKeyPressed[VK_SPACE]) {
+					startSignal += 1;
+					m_bKeyPressed[VK_SPACE] = false;
 				}
 			}
-			else {
-				ball->MoveBy(ball->m_Velocity.x * m_ElapsedTime, ball->m_Velocity.y * m_ElapsedTime);
-				InGameInputCheck();
-				CollisionCheck();
-			}
-		}
-		else { //스페이스바 입력 시 게임 시작
-			DrawSceneTextPos("Matching Wait", CKgPoint(m_pScene->m_nH / 2 - 25, m_pScene->m_nH / 2));
-			if (m_bKeyPressed[VK_SPACE]) {
-				isStart = true;
+
+			if (startSignal >= 2) {
+				isGameStart = true;
 			}
 		}
 	}
-	else { // HP가 0이 되었을 떄
-		DrawSceneTextPos("Game Over! (Press ESC to Exit)", CKgPoint(m_pScene->m_nH / 2 - 50, m_pScene->m_nH / 2));
-		if (m_bKeyPressed[VK_ESCAPE]) {
-			PostQuitMessage(0);
+	else {
+		if (m_bMousePressed[0]) {
+			if (CheckMouseInRect(singleGameButton)) {
+				gameType = GameType::SINGLE;
+				isSetGameType = true;
+				CreateGame();
+			}
+			else if (CheckMouseInRect(multiGameButton)) {
+				gameType = GameType::MULTI;
+				isSetGameType = true;
+				CreateGame();
+			}
+			m_bMousePressed[0] = false;
 		}
 	}
 }
