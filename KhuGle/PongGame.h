@@ -48,6 +48,8 @@ public:
 	void StartGame();
 	void ResetGame();
 
+	void MoveObject();
+
 	//Server
 	bool ConnectServer();
 
@@ -57,14 +59,11 @@ public:
 	//Player
 	void CheckInput();
 
-	void MoveObject();
-
 	//Collision
-	bool IsPointInRect(CKgPoint point, CKhuGleSprite* rect);
-	void CheckBallCollision();
 	CKgVector2D GetProjectionResult(CKhuGleSprite* s1);
-	double GetLineCollisionResult(CKhuGleSprite* s1);
-	bool GetAABBCollisionResult(CKhuGleSprite* s1);
+	bool IsPointInRect(CKgPoint point, CKhuGleSprite* rect);
+	bool IsOverlapped(CKhuGleSprite* s1);
 	void MakePlayerAndBallCollision(CKhuGleSprite* s1);
-
+	void CheckBallCollision();
+	void StrictBallPosition();
 };

@@ -30,5 +30,6 @@ void Player::Move(bool up, bool down, float deltaTime) {
 		m_rtBoundBox.Bottom = SCREEN_HEIGHT - LAYER_MARGIN;
 		m_rtBoundBox.Top = SCREEN_HEIGHT - LAYER_MARGIN - PLAYER_HEIGHT;
 	}
+	m_Center.x = (m_rtBoundBox.Left + m_rtBoundBox.Right) / 2;
 	m_Center.y = (m_rtBoundBox.Bottom + m_rtBoundBox.Top) / 2;
 }

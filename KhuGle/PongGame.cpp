@@ -7,7 +7,13 @@ PongGame::PongGame() : CKhuGleWin(SCREEN_WIDTH, SCREEN_HEIGHT)
 }
 
 PongGame::~PongGame() {
-
+	delete leftPlayer;
+	delete rightPlayer;
+	delete m_pGameLayer;
+	delete singleGameButton;
+	delete multiGameButton;
+	delete ball;
+	delete[] maps;
 }
 
 void PongGame::InitScene() {
@@ -43,10 +49,10 @@ void PongGame::InitResource() {
 	m_pGameLayer->AddChild(multiGameButton);
 
 	//Player
-	leftPlayer = new Player(GP_STYPE_RECT, GP_CTYPE_KINEMATIC, CKgLine(CKgPoint(LAYER_MARGIN, 250), CKgPoint(LAYER_MARGIN + PLAYER_WIDTH, 250 + PLAYER_HEIGHT)), WHITE, true, PLAYER_HEIGHT);
+	leftPlayer = new Player(GP_STYPE_RECT, GP_CTYPE_KINEMATIC, CKgLine(CKgPoint(LAYER_MARGIN, 250), CKgPoint(LAYER_MARGIN + PLAYER_WIDTH, 250 + PLAYER_HEIGHT)), WHITE, true, PLAYER_WIDTH);
 	leftPlayer->SetPhysics(CKgVector2D(600, 600), 200);
 
-	rightPlayer = new Player(GP_STYPE_RECT, GP_CTYPE_KINEMATIC, CKgLine(CKgPoint(SCREEN_WIDTH - LAYER_MARGIN * 2, 250), CKgPoint(SCREEN_WIDTH - LAYER_MARGIN * 2 + PLAYER_WIDTH, 250 + PLAYER_HEIGHT)), KG_COLOR_24_RGB(255, 255, 255), true, PLAYER_HEIGHT);
+	rightPlayer = new Player(GP_STYPE_RECT, GP_CTYPE_KINEMATIC, CKgLine(CKgPoint(SCREEN_WIDTH - LAYER_MARGIN * 2, 250), CKgPoint(SCREEN_WIDTH - LAYER_MARGIN * 2 + PLAYER_WIDTH, 250 + PLAYER_HEIGHT)), KG_COLOR_24_RGB(255, 255, 255), true, PLAYER_WIDTH);
 	rightPlayer->SetPhysics(CKgVector2D(600, 600), 200);
 
 	//Object
@@ -77,19 +83,11 @@ void PongGame::StartGame() {
 
 void PongGame::ResetGame() {
 	ball->MoveTo(600, 20);
-	ball->m_Velocity = CKgVector2D(300 * (((leftScore + rightScore) % 2 == 0) ? -1 : 1), 300);
+	ball->m_Velocity = CKgVector2D(300 * (((leftScore + rightScore + 1) % 2 == 0) ? -1 : 1), 300);
 }
 
 void PongGame::MoveObject() {
-	if (ball->m_Velocity.x > 500) {
-		ball->m_Velocity.x = 500;
-	}
-	if (ball->m_Velocity.y > 500) {
-		ball->m_Velocity.y = 500;
-	}
 	ball->MoveBy(ball->m_Velocity.x * m_ElapsedTime, ball->m_Velocity.y * m_ElapsedTime);
-
-
 	leftPlayer->Move(leftPlayerMove[0], leftPlayerMove[1], m_ElapsedTime);
 	rightPlayer->Move(rightPlayerMove[0], rightPlayerMove[1], m_ElapsedTime);
 }
@@ -141,59 +139,104 @@ bool PongGame::IsPointInRect(CKgPoint point, CKhuGleSprite* rect) {
 CKgVector2D PongGame::GetProjectionResult(CKhuGleSprite* s1) { //Projection Vector
 	CKgVector2D line = CKgVector2D(s1->m_lnLine.End.X - s1->m_lnLine.Start.X, s1->m_lnLine.End.Y - s1->m_lnLine.Start.Y);
 	CKgVector2D lineTball = CKgVector2D(ball->m_Center.x - s1->m_lnLine.Start.X, ball->m_Center.y - s1->m_lnLine.Start.Y);
-	double v11 = (line.x * lineTball.x + line.y * lineTball.y) / line.Dot(line);
+	double v11 = max(0.0, min(line.Dot(line), line.Dot(lineTball))) / line.Dot(line);
 	CKgVector2D projection = v11 * line;
-	CKgVector2D projectionPoint = CKgVector2D(s1->m_lnLine.Start) + projection;
+	CKgVector2D projectionPoint = lineTball - projection;
 	return projectionPoint;
 }
 
-double PongGame::GetLineCollisionResult(CKhuGleSprite* s1) { //공과 다른 선 객체와의 충돌 확인
-	CKgVector2D normal = ball->m_Center - GetProjectionResult(s1);
-	double overlapped = CKgVector2D::abs(normal) - ball->m_Radius;
-	return overlapped;
-}
-
-bool PongGame::GetAABBCollisionResult(CKhuGleSprite* s1) { //공과 다른 사각형 객체와의 충돌 확인
-	return (s1->m_rtBoundBox.Left <= ball->m_Center.x + ball->m_Radius) &&
-		(s1->m_rtBoundBox.Right >= ball->m_Center.x - ball->m_Radius) &&
-		(s1->m_rtBoundBox.Top <= ball->m_Center.y + ball->m_Radius) &&
-		(s1->m_rtBoundBox.Bottom >= ball->m_Center.y - ball->m_Radius);
+bool PongGame::IsOverlapped(CKhuGleSprite* s1) { //공과 다른 선 객체와의 충돌 확인
+	CKgVector2D project = GetProjectionResult(s1);
+	double distance = (ball->m_Radius + s1->m_nWidth / 2.0f);
+	double overlapped = CKgVector2D::abs(project) - distance;
+	return (overlapped <= 0);
 }
 
 void PongGame::MakePlayerAndBallCollision(CKhuGleSprite* s1) { //가상의 원을 만들어 공과 충돌처리
 	CKgVector2D project = GetProjectionResult(s1);
-	CKgVector2D PosVec = ball->m_Center - project;
-	double distance = CKgVector2D::abs(PosVec);
-	if (distance == 0) distance = 1E-6;
-	CKgVector2D Normal = (1. / distance) * PosVec;
+	CKgVector2D normal = (1 / CKgVector2D::abs(project)) * project;
+	CKgVector2D line = CKgVector2D(s1->m_lnLine.End.X - s1->m_lnLine.Start.X, s1->m_lnLine.End.Y - s1->m_lnLine.Start.Y);
+	double direction = CKgVector2D::abs(line);
+	double speed = CKgVector2D::abs(ball->m_Velocity);
 
-	double kx = abs(ball->m_Velocity.x - s1->m_Velocity.x);
-	double ky = abs(ball->m_Velocity.y - s1->m_Velocity.y);
-	double p = 2.0 * (Normal.x * kx + Normal.y * ky) / (ball->m_Mass + s1->m_Mass);
+	double theta = acos(ball->m_Velocity.Dot(line) / (direction * speed));
+	double square;
+	if (theta > 0) {
+		square = sin(theta);
+	}
+	else {
+		square = cos(theta);
+	}
+	CKgVector2D reaction = (speed * 2 * square) * normal;
+	ball->m_Velocity += reaction;
+	std::cout << ball->m_Velocity.x << " " << ball->m_Velocity.y << std::endl;
+	ball->m_Velocity = (s1->m_Mass / ball->m_Mass) * speed * ((1 / CKgVector2D::abs(ball->m_Velocity)) * ball->m_Velocity);
 
-	ball->m_Velocity.x = ball->m_Velocity.x - p * s1->m_Mass * Normal.x;
-	ball->m_Velocity.y = ball->m_Velocity.y - p * s1->m_Mass * Normal.y;
+	double distance = (ball->m_Radius + s1->m_nWidth / 2.0f);
+	double offset = distance - CKgVector2D::abs(project);
+	CKgVector2D offsetVector = (offset / 2) * project;
+	ball->MoveBy(offsetVector.x, offsetVector.y);
+}
+
+void PongGame::StrictBallPosition() {
+	if (ball->m_rtBoundBox.Top < 0) {
+		ball->m_rtBoundBox.Top = 0;
+		ball->m_rtBoundBox.Bottom = ball->m_Radius * 2;
+	}
+	if (ball->m_rtBoundBox.Bottom > SCREEN_HEIGHT) {
+		ball->m_rtBoundBox.Top = SCREEN_HEIGHT - ball->m_Radius * 2;
+		ball->m_rtBoundBox.Bottom = SCREEN_HEIGHT;
+	}
+	if (ball->m_rtBoundBox.Left < 0) {
+		ball->m_rtBoundBox.Left = 0;
+		ball->m_rtBoundBox.Right = ball->m_Radius * 2;
+	}
+	if (ball->m_rtBoundBox.Right > SCREEN_WIDTH) {
+		ball->m_rtBoundBox.Right = SCREEN_WIDTH - ball->m_Radius * 2;
+		ball->m_rtBoundBox.Right = SCREEN_WIDTH;
+	}
+	ball->m_Center.x = (ball->m_rtBoundBox.Left + ball->m_rtBoundBox.Right) / 2;
+	ball->m_Center.y = (ball->m_rtBoundBox.Bottom + ball->m_rtBoundBox.Top) / 2;
+
+	ball->m_Acceleration.x = ball->m_Velocity.x * m_AirResistance.x;
+	ball->m_Acceleration.y = ball->m_Velocity.y * m_AirResistance.y;
+
+	ball->m_Velocity.x += ball->m_Acceleration.x * m_ElapsedTime;
+	ball->m_Velocity.y += ball->m_Acceleration.y * m_ElapsedTime;
+
+	if (ball->m_Velocity.x > 1000) {
+		ball->m_Velocity.x = 1000;
+	}
+	if (ball->m_Velocity.y > 1000) {
+		ball->m_Velocity.y = 1000;
+	}
+	if (ball->m_Velocity.x < -1000) {
+		ball->m_Velocity.x = -1000;
+	}
+	if (ball->m_Velocity.y < -1000) {
+		ball->m_Velocity.y = -1000;
+	}
 }
 
 void PongGame::CheckBallCollision() {
-	if (GetLineCollisionResult(rightPlayer) <= 0) {
-		//ball->MoveBy(-PosVec.x * Overlapped / CKgVector2D::abs(PosVec), -PosVec.y * Overlapped / CKgVector2D::abs(PosVec));
+	if (IsOverlapped(rightPlayer)) {
 		MakePlayerAndBallCollision(rightPlayer);
 	}
-	else if (GetLineCollisionResult(leftPlayer) <= 0) {
+	else if (IsOverlapped(leftPlayer)) {
 		MakePlayerAndBallCollision(leftPlayer);
 	}
 	for (int i = 0; i < 4; i++) { //벽과의 충돌
-		double overlapped = GetLineCollisionResult(maps[i]);
-		if (overlapped <= 0) {
-			std::cout << "충돌" << std::endl;
+		bool overlapped = IsOverlapped(maps[i]);
+		if (overlapped) {
 			switch (i)
 			{
 			case 0:
-				ball->m_Velocity.x = -ball->m_Velocity.x;
+				leftScore++;
+				ResetGame();
 				break;
 			case 1:
-				ball->m_Velocity.x = -ball->m_Velocity.x;
+				rightScore++;
+				ResetGame();
 				break;
 			case 2:
 				ball->m_Velocity.x = ball->m_Velocity.x;
@@ -285,9 +328,10 @@ void PongGame::Update() {
 				}
 			}
 			else {
+				MoveObject();
+				StrictBallPosition();
 				CheckInput();
 				CheckBallCollision();
-				MoveObject();
 				if (leftScore >= 10 || rightScore >= 10) {
 					isGameEnd = true;
 				}
