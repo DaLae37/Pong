@@ -7,13 +7,7 @@ PongGame::PongGame() : CKhuGleWin(SCREEN_WIDTH, SCREEN_HEIGHT)
 }
 
 PongGame::~PongGame() {
-	delete leftPlayer;
-	delete rightPlayer;
-	delete m_pGameLayer;
-	delete singleGameButton;
-	delete multiGameButton;
-	delete ball;
-	delete[] maps;
+
 }
 
 void PongGame::InitScene() {
@@ -76,6 +70,8 @@ void PongGame::StartGame() {
 			m_pGameLayer->m_Children.erase(m_pGameLayer->m_Children.begin() + i);
 		}
 	}
+	delete singleGameButton;
+	delete multiGameButton;
 	m_pGameLayer->AddChild(leftPlayer);
 	m_pGameLayer->AddChild(rightPlayer);
 	m_pGameLayer->AddChild(ball);
@@ -160,16 +156,9 @@ void PongGame::MakePlayerAndBallCollision(CKhuGleSprite* s1) { //가상의 원을 만�
 	double speed = CKgVector2D::abs(ball->m_Velocity);
 
 	double theta = acos(ball->m_Velocity.Dot(line) / (direction * speed));
-	double square;
-	if (theta > 0) {
-		square = sin(theta);
-	}
-	else {
-		square = cos(theta);
-	}
+	double square = sin(theta);
 	CKgVector2D reaction = (speed * 2 * square) * normal;
 	ball->m_Velocity += reaction;
-	std::cout << ball->m_Velocity.x << " " << ball->m_Velocity.y << std::endl;
 	ball->m_Velocity = (s1->m_Mass / ball->m_Mass) * speed * ((1 / CKgVector2D::abs(ball->m_Velocity)) * ball->m_Velocity);
 
 	double distance = (ball->m_Radius + s1->m_nWidth / 2.0f);
@@ -264,7 +253,7 @@ void PongGame::RenderUI() {
 				else {
 					message = "오른쪽 플레이어 승리!";
 				}
-				DrawSceneTextPos(message.c_str(), CKgPoint(275, 100), WHITE, 100);
+				DrawSceneTextPos(message.c_str(), CKgPoint(300, 100), WHITE, 100);
 				DrawSceneTextPos("ESC를 누르면 종료됩니다", CKgPoint(425, 600), WHITE, 50);
 			}
 			std::string message = std::to_string(leftScore) + "  :  " + std::to_string(rightScore);
@@ -344,7 +333,6 @@ void PongGame::Update() {
 					m_bKeyPressed[VK_SPACE] = false;
 				}
 			}
-
 			if (startSignal >= 2) {
 				isGameStart = true;
 			}
