@@ -28,8 +28,16 @@ private:
 	//Player
 	Player* leftPlayer;
 	Player* rightPlayer;
+
+	//Server
 	bool opponentPlayer; //LEFT = false, RIGHT = true
 	bool opponentInput[2]; //UP, DOWN
+	bool readySignal; //Ingame Ready
+	bool isMatched;
+	std::vector<char> buffer;
+	SOCKET sock;
+	SOCKADDR_IN addr;
+	std::thread *clientThread;
 
 	CKhuGleLayer* m_pGameLayer;
 	CKgPoint m_LButtonStart, m_LButtonEnd;
@@ -52,6 +60,8 @@ public:
 
 	//Server
 	bool ConnectServer();
+	void OnConnectServer();
+	void OffConnectServer();
 
 	//UI
 	void RenderUI();

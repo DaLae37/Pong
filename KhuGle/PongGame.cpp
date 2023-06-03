@@ -10,6 +10,93 @@ PongGame::~PongGame() {
 
 }
 
+void PongGame::OnConnectServer() {
+	char data;
+	while (true) {
+		if (recv(sock, &data, sizeof(char), 0) == SOCKET_ERROR)
+		{
+			std::cout << "Disconnected Server" << std::endl;
+			break;
+		}
+		buffer.push_back(data);
+		if (buffer.size() >= 7 && *(buffer.end() -1) == ';')
+		{
+			if (!isMatched) {
+				if (buffer[5] == 1) {
+					isMatched = true;
+					opponentPlayer = (buffer[6] == 0) ? false : true;
+					startSignal += 1;
+				}
+			}
+			else {
+				if (!opponentPlayer) {
+					opponentInput[0] = (buffer[0] == '1') ? true : false;
+					opponentInput[1] = (buffer[1] == '1') ? true : false;
+				}
+				else {
+					opponentInput[0] = (buffer[3] == '1') ? true : false;
+					opponentInput[1] = (buffer[4] == '1') ? true : false;
+				}
+			}
+			buffer.clear();
+		}
+		char sendData[7] = { '0','0','0','0','0','0', ';'}; // index 5 : matching, index 6 : opponent
+		if (!isMatched) {
+			if (readySignal) {
+				sendData[5] = '1';
+			}
+		}
+		else {
+			if (opponentPlayer) {
+				sendData[0] = (leftPlayerMove[0]) ? '1' : '0';
+				sendData[1] = (leftPlayerMove[1]) ? '1' : '0';
+			}
+			else {
+				sendData[2] = (rightPlayerMove[0]) ? '1' : '0';
+				sendData[3] = (rightPlayerMove[1]) ? '1' : '0';
+			}
+		}
+		send(sock, sendData, 7, 0);
+	}
+}
+
+void PongGame::OffConnectServer() {
+	clientThread->join();
+	closesocket(sock);
+	WSACleanup();
+}
+
+bool PongGame::ConnectServer() {
+	WSADATA wsaData;
+	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+		std::cout << "Ver 2.2 Erorr" << std::endl;
+		return 1;
+	}
+
+	PCWSTR serverName = L"server.dalae37.com";
+	PADDRINFOW ipInfo;
+
+	if (GetAddrInfoW(serverName, NULL, NULL, &ipInfo) == 0) {
+		PIN_ADDR ip = &((PSOCKADDR_IN)ipInfo->ai_addr)->sin_addr;
+		unsigned long ipName = ip->S_un.S_addr;
+		sock = socket(PF_INET, SOCK_STREAM, 0);
+		memset(&addr, 0, sizeof(addr));
+		addr.sin_family = AF_INET;
+		addr.sin_addr.s_addr = ipName;
+		addr.sin_port = htons(3737);
+		std::cout << "Server IP : " << inet_ntoa(addr.sin_addr) << std::endl;
+		if (connect(sock, (SOCKADDR*)&addr, sizeof(SOCKADDR_IN)) == SOCKET_ERROR) {
+			std::cout << "Server Connection Error" << std::endl;
+			return false;
+		}
+	}
+	else {
+		std::cout << "Unknown Server Name : " << serverName << std::endl;
+		return false;
+	}
+	return true;
+}
+
 void PongGame::InitScene() {
 	gameType = GameType::NONE;
 
@@ -21,6 +108,12 @@ void PongGame::InitScene() {
 	leftPlayerMove[1] = false;
 	rightPlayerMove[0] = false;
 	rightPlayerMove[1] = false;
+
+	opponentPlayer = false;
+	opponentInput[0] = false;
+	opponentInput[1] = false;
+	readySignal = false;
+	isMatched = false;
 
 	leftScore = 0;
 	rightScore = 0;
@@ -86,38 +179,6 @@ void PongGame::MoveObject() {
 	ball->MoveBy(ball->m_Velocity.x * m_ElapsedTime, ball->m_Velocity.y * m_ElapsedTime);
 	leftPlayer->Move(leftPlayerMove[0], leftPlayerMove[1], m_ElapsedTime);
 	rightPlayer->Move(rightPlayerMove[0], rightPlayerMove[1], m_ElapsedTime);
-}
-
-bool PongGame::ConnectServer() {
-	WSADATA wsaData;
-	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-		std::cout << "Ver 2.2 Erorr" << std::endl;
-		return 1;
-	}
-
-	PCWSTR serverName = L"server.dalae37.com";
-	PADDRINFOW ipInfo;
-
-	if (GetAddrInfoW(serverName, NULL, NULL, &ipInfo) == 0) {
-		PIN_ADDR ip = &((PSOCKADDR_IN)ipInfo->ai_addr)->sin_addr;
-		unsigned long ipName = ip->S_un.S_addr;
-		SOCKET sock = socket(PF_INET, SOCK_STREAM, 0);
-		SOCKADDR_IN addr;
-		memset(&addr, 0, sizeof(addr));
-		addr.sin_family = AF_INET;
-		addr.sin_addr.s_addr = ipName;
-		addr.sin_port = htons(3737);
-		std::cout << "Server IP : " << inet_ntoa(addr.sin_addr) << std::endl;
-		if (connect(sock, (SOCKADDR*)&addr, sizeof(SOCKADDR_IN)) == SOCKET_ERROR) {
-			std::cout << "Server Connection Error" << std::endl;
-			return false;
-		}
-	}
-	else {
-		std::cout << "Unknown Server Name : " << serverName << std::endl;
-		return false;
-	}
-	return true;
 }
 
 bool PongGame::IsPointInRect(CKgPoint point, CKhuGleSprite* rect) {
@@ -220,11 +281,11 @@ void PongGame::CheckBallCollision() {
 			switch (i)
 			{
 			case 0:
-				leftScore++;
+				rightScore++;
 				ResetGame();
 				break;
 			case 1:
-				rightScore++;
+				leftScore++;
 				ResetGame();
 				break;
 			case 2:
@@ -333,6 +394,15 @@ void PongGame::Update() {
 					m_bKeyPressed[VK_SPACE] = false;
 				}
 			}
+			if (gameType == GameType::MULTI) {
+				if (!isMatched) {
+					if (m_bKeyPressed[VK_SPACE] && !readySignal) {
+						readySignal = true;
+						startSignal += 1;
+						m_bKeyPressed[VK_SPACE] = false;
+					}
+				}
+			}
 			if (startSignal >= 2) {
 				isGameStart = true;
 			}
@@ -349,6 +419,13 @@ void PongGame::Update() {
 				gameType = GameType::MULTI;
 				isSetGameType = true;
 				StartGame();
+				if (ConnectServer()) {
+					clientThread = new std::thread(&PongGame::OnConnectServer,this);
+				}
+				else {
+					isGameStart = true;
+					isGameEnd = true;
+				}
 			}
 			m_bMousePressed[0] = false;
 		}

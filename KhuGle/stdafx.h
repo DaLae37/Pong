@@ -22,7 +22,7 @@
 #include <string>
 #include <stdlib.h>
 #include <time.h>
-
+#include <thread>
 #include "KhuGleWin.h"
 
 #define PROGRAM_NAME "Pong"
