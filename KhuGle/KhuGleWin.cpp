@@ -3,7 +3,8 @@
 //	Prof. Daeho Lee, nize@khu.ac.kr
 //
 #include "stdafx.h"
-
+HICON icon_main;
+HICON icon_task;
 CKhuGleWin *CKhuGleWin::m_pWinApplication = 0;
 
 void KhuGleWinInit(CKhuGleWin *pApplication)
@@ -53,7 +54,9 @@ LRESULT CALLBACK CKhuGleWin::WndProcInstanceMember(HWND hwnd, UINT message, WPAR
 
 	switch (message)
 	{
-	case WM_CREATE: 
+	case WM_CREATE:
+		SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)icon_main);
+		SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)icon_task);
 		break;
 
 	case WM_PAINT:
@@ -444,13 +447,14 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 	windowClass.cbClsExtra = 0;
 	windowClass.cbWndExtra = 0;
 	windowClass.hInstance = hInstance;
-	windowClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	windowClass.hIcon = LoadIcon(NULL, MAKEINTRESOURCE(IDI_ICON_EXE));
 	windowClass.hCursor = LoadCursor(NULL, IDC_ARROW);
 	windowClass.hbrBackground = NULL;
 	windowClass.lpszMenuName = NULL;
 	windowClass.lpszClassName = "WinClass";
 	windowClass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
-
+	icon_main = LoadIcon(NULL, MAKEINTRESOURCE(IDI_ICON_MAIN));
+	icon_task = LoadIcon(NULL, MAKEINTRESOURCE(IDI_ICON_TASK));
 	if (!RegisterClassEx(&windowClass))	return 0;
 
 	dwExStyle = WS_EX_APPWINDOW | WS_EX_WINDOWEDGE; 

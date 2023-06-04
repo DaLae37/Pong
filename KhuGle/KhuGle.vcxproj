@@ -161,7 +161,14 @@
     <ClInclude Include="KhuGleWin.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="PongGame.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="pong.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="KhuGle.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

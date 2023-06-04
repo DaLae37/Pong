@@ -34,7 +34,7 @@ private:
 	bool opponentInput[2]; //UP, DOWN
 	bool readySignal; //Ingame Ready
 	bool isMatched;
-	std::vector<char> buffer;
+	char recvBuffer[BUFFER_SIZE];
 	SOCKET sock;
 	SOCKADDR_IN addr;
 	std::thread *clientThread;

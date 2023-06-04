@@ -3,7 +3,7 @@
 #pragma comment(lib, "ws2_32")
 #include <WinSock2.h>
 #include <ws2tcpip.h>
-#define BUFFERSIZE 1024
+#define BUFFER_SIZE 8
 
 #define _CRTDBG_MAP_ALLOC
 #include <cstdlib>
@@ -24,6 +24,7 @@
 #include <time.h>
 #include <thread>
 #include "KhuGleWin.h"
+#include "resource.h"
 
 #define PROGRAM_NAME "Pong"
 

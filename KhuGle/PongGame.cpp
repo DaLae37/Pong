@@ -11,52 +11,50 @@ PongGame::~PongGame() {
 }
 
 void PongGame::OnConnectServer() {
-	char data;
 	while (true) {
-		if (recv(sock, &data, sizeof(char), 0) == SOCKET_ERROR)
-		{
+		char sendBuffer[BUFFER_SIZE] = { '0','0','0','0','0','0',';' }; // index 4 : matching, index 5 : opponent
+		if (readySignal) {
+			sendBuffer[4] = '1';
+		}
+		if (isGameStart) {
+			if (!opponentPlayer) {
+				sendBuffer[2] = (rightPlayerMove[0]) ? '1' : '0';
+				sendBuffer[3] = (rightPlayerMove[1]) ? '1' : '0';
+			}
+			else {
+				sendBuffer[0] = (leftPlayerMove[0]) ? '1' : '0';
+				sendBuffer[1] = (leftPlayerMove[1]) ? '1' : '0';
+			}
+		}
+		send(sock, sendBuffer, BUFFER_SIZE, 0);
+
+		if (recv(sock, recvBuffer, BUFFER_SIZE, 0) == SOCKET_ERROR) {
 			std::cout << "Disconnected Server" << std::endl;
 			break;
 		}
-		buffer.push_back(data);
-		if (buffer.size() >= 7 && *(buffer.end() -1) == ';')
-		{
+		else {
 			if (!isMatched) {
-				if (buffer[5] == 1) {
+				if (recvBuffer[4] == '1') {
 					isMatched = true;
-					opponentPlayer = (buffer[6] == 0) ? false : true;
+					opponentPlayer = (recvBuffer[5] == '0') ? false : true;
 					startSignal += 1;
 				}
 			}
-			else {
+			if (isGameStart) {
 				if (!opponentPlayer) {
-					opponentInput[0] = (buffer[0] == '1') ? true : false;
-					opponentInput[1] = (buffer[1] == '1') ? true : false;
+					leftPlayer->m_fgColor = RED;
+					rightPlayer->m_fgColor = BLUE;
+					opponentInput[0] = (recvBuffer[0] == '1') ? true : false;
+					opponentInput[1] = (recvBuffer[1] == '1') ? true : false;
 				}
 				else {
-					opponentInput[0] = (buffer[3] == '1') ? true : false;
-					opponentInput[1] = (buffer[4] == '1') ? true : false;
+					leftPlayer->m_fgColor = BLUE;
+					rightPlayer->m_fgColor = RED;
+					opponentInput[0] = (recvBuffer[2] == '1') ? true : false;
+					opponentInput[1] = (recvBuffer[3] == '1') ? true : false;
 				}
 			}
-			buffer.clear();
 		}
-		char sendData[7] = { '0','0','0','0','0','0', ';'}; // index 5 : matching, index 6 : opponent
-		if (!isMatched) {
-			if (readySignal) {
-				sendData[5] = '1';
-			}
-		}
-		else {
-			if (opponentPlayer) {
-				sendData[0] = (leftPlayerMove[0]) ? '1' : '0';
-				sendData[1] = (leftPlayerMove[1]) ? '1' : '0';
-			}
-			else {
-				sendData[2] = (rightPlayerMove[0]) ? '1' : '0';
-				sendData[3] = (rightPlayerMove[1]) ? '1' : '0';
-			}
-		}
-		send(sock, sendData, 7, 0);
 	}
 }
 
@@ -353,7 +351,7 @@ void PongGame::CheckInput() {
 		return;
 	}
 	else if (gameType == GameType::MULTI) {
-		if (opponentPlayer) {
+		if (!opponentPlayer) {
 			leftPlayerMove[0] = opponentInput[0];
 			leftPlayerMove[1] = opponentInput[1];
 		}
@@ -395,12 +393,10 @@ void PongGame::Update() {
 				}
 			}
 			if (gameType == GameType::MULTI) {
-				if (!isMatched) {
-					if (m_bKeyPressed[VK_SPACE] && !readySignal) {
-						readySignal = true;
-						startSignal += 1;
-						m_bKeyPressed[VK_SPACE] = false;
-					}
+				if (m_bKeyPressed[VK_SPACE] && !readySignal) {
+					readySignal = true;
+					startSignal += 1;
+					m_bKeyPressed[VK_SPACE] = false;
 				}
 			}
 			if (startSignal >= 2) {
@@ -420,6 +416,8 @@ void PongGame::Update() {
 				isSetGameType = true;
 				StartGame();
 				if (ConnectServer()) {
+					char buffer[BUFFER_SIZE] = { '0','0','0','0','0','0',';'};
+					send(sock, buffer, BUFFER_SIZE, 0);
 					clientThread = new std::thread(&PongGame::OnConnectServer,this);
 				}
 				else {
