@@ -501,6 +501,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 		{
 			CKhuGleWin::m_pWinApplication->GetFps();
 			if (CKhuGleWin::m_pWinApplication->m_ElapsedTime >= (1. / 60.)) {
+				CKhuGleWin::m_pWinApplication->m_ElapsedTime = (1. / 60.);
 				CKhuGleWin::m_pWinApplication->m_TimeCountStart = CKhuGleWin::m_pWinApplication->m_TimeCountEnd;
 				CKhuGleWin::m_pWinApplication->Update();
 			}
