@@ -23,6 +23,6 @@ WinAPI Pong Game as CPP Client
 
 [유튜브](https://youtu.be/OfasKujaIms)
 
-[보고서](https://github.com/DaLae37/Pong/releases/tag/v1.0.0/report.pdf)
+[보고서](https://github.com/DaLae37/Pong/releases/download/v1.0.0/report.pdf)
 
-[발표자료](https://github.com/DaLae37/Pong/releases/tag/v1.0.0/presentation.pdf)
+[발표자료](https://github.com/DaLae37/Pong/releases/download/v1.0.0/presentation.pdf)
