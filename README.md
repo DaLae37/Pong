@@ -1,6 +1,8 @@
 # Pong
 WinAPI Pong Game as CPP Client
 
+```The license applies only to the PongGame.cpp PongGame.h Player.cpp Player.h, NOT framework files```
+
 ![메인](https://www.dalae37.com/project/pong/resource/image/pong_cpp.webp)
 
 ![인게임1](https://www.dalae37.com/project/pong/resource/image/pong_cpp_ingame1.webp)
